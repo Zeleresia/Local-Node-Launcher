@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local App Launcher</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="{{ url_for('index') }}">Local App Launcher</a>
+
+      <nav class="nav-links desktop-only">
+        <a href="#instances">Instances</a>
+        <a href="#add">Add</a>
+      </nav>
+
+      <button id="themeToggle" class="btn ghost" type="button" aria-label="Toggle theme">Dark</button>
+
+      <button id="navToggle" class="btn icon mobile-only" aria-label="Open menu" aria-controls="navMenu" aria-expanded="false">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </button>
+    </div>
+
+    <nav id="navMenu" class="mobile-menu" hidden>
+      <a href="#instances" class="mobile-link">Instances</a>
+      <a href="#add" class="mobile-link">Add</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    {% with msgs = get_flashed_messages() %}
+      {% if msgs %}
+        <ul class="alert-list">
+          {% for m in msgs %}<li class="alert success">{{ m }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <section id="instances" class="card">
+      <div class="card-header"><h2>Instances</h2></div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>Command</th>
+                <th>Status</th>
+                <th style="width:220px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in apps %}
+                {% set running = app.id in procs %}
+                <tr>
+                  <td>{{ app.name }}</td>
+                  <td><span class="muted mono">{{ app.cwd }}</span></td>
+                  <td><code class="mono">{{ app.cmd }}</code></td>
+                  <td>
+                    {% if running %}
+                      <span class="badge ok">RUNNING (PID {{ procs[app.id].pid }})</span>
+                    {% else %}
+                      <span class="badge err">STOPPED</span>
+                    {% endif %}
+                  </td>
+                  <td class="actions">
+                    {% if running %}
+                      <form method="post" action="{{ url_for('stop_app', app_id=app.id) }}">
+                        <button class="btn" type="submit">Stop</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{{ url_for('start_app', app_id=app.id) }}">
+                        <button class="btn primary" type="submit">Start</button>
+                      </form>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('delete_app', app_id=app.id) }}" onsubmit="return confirm('Delete this instance?')">
+                      <button class="btn danger" type="submit">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="add" class="card">
+      <div class="card-header"><h2>Add Instance</h2></div>
+      <div class="card-body">
+        <form class="row" method="post" action="{{ url_for('add_app') }}">
+          <input class="input" type="text" name="name" placeholder="Name (e.g. Discord Bot)" required>
+          <input class="input" type="text" name="cwd"  placeholder="Working dir (e.g. D:\proj\bot)" required>
+          <input class="input" type="text" name="cmd"  placeholder="Command (e.g. npm run start)" required>
+          <button class="btn primary" type="submit">Add</button>
+        </form>
+        <p class="muted small">
+          Examples: <code class="mono">npm run start</code> · <code class="mono">node index.js</code> · <code class="mono">python app.py</code> · <code class="mono">py -3.11 -m uvicorn main:app</code>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p class="muted small">&copy; {{ 2025 }} ZeleMarsh7mary. All rights reserved. Licensed under the MIT License</p>
+  </footer>
+</body>
+</html>
